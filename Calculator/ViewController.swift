@@ -22,27 +22,27 @@ class ViewController: UIViewController {
     
     @IBOutlet var Formula: UILabel!
     
-    @IBAction func click(sender: UIButton) {
+    @IBAction func number(sender: UIButton) {
         var button=sender.currentTitle
-        if calculation.prev {
-            Formula.text!=""
-            calculation.prev=false
-        }
-        Formula.text!+=button!
-        
-        calculation.add(sender.currentTitle!)
+        calculation.addNumber(sender.currentTitle!)
+        Formula.text=calculation.proc()
+    }
+    @IBAction func operate(sender: UIButton) {
+        var button=sender.currentTitle
+        calculation.addOperate(sender.currentTitle!)
         if button=="=" {
-            Result.text=String(calculation.result)
+            Result.text=calculation.print()
+            Formula.text=calculation.proc()
+            calculation.clear()
         }
         else{
-            Result.text=""}
-        
-    }
-    @IBAction func symbol(sender: UIButton) {
-        calculation.transform()
-        if calculation.neg==false {
-            Formula.text!+="-"
+            Formula.text=calculation.proc()
         }
+    }
+    @IBAction func clear(sender: UIButton) {
+        calculation.clear()
+        Formula.text=""
+        Result.text=""
     }
     
 }
