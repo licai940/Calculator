@@ -96,9 +96,6 @@ class Calculation: NSObject {
                     include=false
                 }
                 else {
-                    println(calList.last?.number.count)
-                    println(calList.last?.operate.count)
-                    println(calList.last?.num)
                     calList.last?.remove()
                 }
             }
@@ -154,6 +151,9 @@ class Calculation: NSObject {
             calList.last?.addNumber(str)
             return
         }
+        if num==""&&operate.count<number.count {
+            operate.append(2)
+        }
         if countElements(str)>1{
             if !neg{
                 neg=true
@@ -191,7 +191,7 @@ class Calculation: NSObject {
             return
         }
         if countElements(num)==0&&(!(numstr.last=="")) {
-            return
+            operate.removeLast()
         }
         else if countElements(num)>0 {
             var n=(num as NSString).floatValue
@@ -201,7 +201,7 @@ class Calculation: NSObject {
             }
             else{
                 number.append(0-n)
-                numstr.append("-("+num+")")
+                numstr.append("(-"+num+")")
             }
             neg=false
             num=""
@@ -225,14 +225,14 @@ class Calculation: NSObject {
     func proc()->String{
         var p:String=""
         var pos=0
-        var calpos=0
+        calPos=0
         for (pos=0;pos<numstr.count;pos++){
             if numstr[pos]=="" {
-                p+="("+calList[calpos].proc()
-                if calList[calpos].finish {
+                p+="("+calList[calPos].proc()
+                if calList[calPos].finish {
                     p+=")"
                 }
-                calpos++
+                calPos++
             }
             else {
                 p+=numstr[pos]
@@ -252,6 +252,7 @@ class Calculation: NSObject {
             if(operate[pos]==3){
                 p+="/"
             }
+            println(p)
         }
         if neg {
             p+="(-"
@@ -270,12 +271,14 @@ class Calculation: NSObject {
         }
         var numCounter=0
         var opCounter=0
+        calPos=0
         result=getNumber(numCounter)
         numCounter++
         while(operate.count>opCounter&&number.count>numCounter){
+            
             var c=getNumber(numCounter)
             if getOperate(opCounter)==0{
-                while operate.count>(numCounter+1)&&operate[opCounter+1]>1{
+                while number.count>numCounter&&operate.count>(opCounter+1)&&operate[opCounter+1]>1{
                     numCounter++
                     opCounter++
                     if operate[opCounter]==3 {
@@ -288,7 +291,7 @@ class Calculation: NSObject {
                 result+=c
             }
             else if getOperate(opCounter)==1{
-                while operate.count>(numCounter+1)&&operate[opCounter+1]>1{
+                while number.count>numCounter&&operate.count>(opCounter+1)&&operate[opCounter+1]>1{
                     numCounter++
                     opCounter++
                     if operate[opCounter]==3 {
@@ -330,24 +333,63 @@ class Calculation: NSObject {
     //output result
     //done
     func print()->String{
-        let s = NSString(format: "%f", result)
-        return s
+        if result<1000&&result>(-1000) {
+            return NSString(format: "%f", result)
         }
+        result=abs(result)
+        let digit:Int=(Int)(log10(result))
+        var s=""
+        for var i=digit-digit%3;i>=3;i-=3 {
+            let base:Int=Int(pow(Double(10), Double(i)))
+            var num:Int=Int(result)/base
+            num%=1000
+            
+            if i==digit-digit%3 {
+                s+=String(num)+","
+            }
+            else {
+                if(num<10){
+                    s+="00"
+                }
+                else if(num<100){
+                    s+="0"
+                }
+                s+=String(num)+","
+            }
+            println(s)
+        }
+        let num=Int(result)%1000
+        if(num<10){
+            s+="00"
+        }
+        else if(num<100){
+            s+="0"
+        }
+        s+=String(num)
+        s+=NSString(format: "%f", result%1).substringFromIndex(1)
+        if neg {
+            result=0-result
+            s="-"+s
+        }
+        return s
+    }
     
     //wrapper
     //done
     func getNumber(pos:Int)->Float{
         if number.count>pos {
             if numstr[pos]=="" {
-                return calList[calPos++].result
+                for var i=0;i<calSpot.count;i+=1 {
+                    if pos==calSpot[i]{
+                        return calList[i].result
+                    }
+                }
             }
             else {
                 return number[pos]
             }
         }
-        else {
             return -1
-        }
     }
     
     //wrapper
