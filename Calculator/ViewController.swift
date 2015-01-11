@@ -42,15 +42,14 @@ class ViewController: UIViewController {
     @IBAction func operate(sender: UIButton) {
         var button=sender.currentTitle!
         println(button)
-        let success=calculation.addOperate(sender.currentTitle!)
-        if button=="=" && success {
+        calculation.addOperate(sender.currentTitle!)
+        if button=="=" {
             Result.text=calculation.print()
             Formula.text=calculation.proc()
             calculation.clear()
         }
-        else if success{
+        
             Formula.text=calculation.proc()
-        }
     }
     
     //done

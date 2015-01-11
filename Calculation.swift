@@ -12,14 +12,17 @@ class Calculation: NSObject {
     var operate:[Int] = []
     var number:[Float] = []
     var num=""
+    var numstr:[String] = []
     var neg=false
     var dot=false
-    var process:[String] = []
     var include=false
     var finish=false
     var calList:[Calculation]=[]
     var calSpot:[Int]=[]
     var base=false
+    var calPos:Int=0
+    
+    var result:Float=0
     
     //add a new parentheses
     func parentheses(){
@@ -28,11 +31,11 @@ class Calculation: NSObject {
             var n=(num as NSString).floatValue
             if neg==false {
                 number.append(n)
-                process.append(num)
+                numstr.append(num)
             }
             else{
                 number.append(0-n)
-                process.append("-("+num+")")
+                numstr.append("-("+num+")")
             }
             neg=false
             num=""
@@ -41,17 +44,16 @@ class Calculation: NSObject {
         
         if !include {
             if base{//base: create new () calculation
-                if fill {
+                if operate.count<number.count {
                     operate.append(2)
-                    process.append("*")
                 }
                 calList.append(Calculation())
                 calSpot.append(number.count)
                 number.append(-1)
-                process.append("?")
+                numstr.append("")
                 include=true
             }
-            else if fill {//end the current one
+            else if number.count>operate.count {//end the current one
                 finish=true
                 getresult()
             }
@@ -59,7 +61,7 @@ class Calculation: NSObject {
                 calList.append(Calculation())
                 calSpot.append(number.count)
                 number.append(-1)
-                process.append("?")
+                numstr.append("")
                 include=true
             }
         }
@@ -77,47 +79,71 @@ class Calculation: NSObject {
         if countElements(num)>0 {
             num=(num as NSString).substringToIndex(countElements(num)-1)
         }
-        else if (process.count==0) {
+        else if neg {
+            parentheses()
+            neg=false
+        }
+        else if number==[]&&operate==[] {
             return
         }
         else{
-            if process.last=="?" {
-                if calList.last?.process.count>0||(!(calList.last?.num=="")) {
-                    calList.last?.remove()
-                    if calList.last?.finish==false{
-                        include=true
-                    }
-                }
-                else {
+            if include {
+                if calList.last?.number.count==0&&calList.last?.operate.count==0&&calList.last?.num=="" {
                     calList.removeLast()
                     number.removeLast()
+                    numstr.removeLast()
                     calSpot.removeLast()
-                    process.removeLast()
                     include=false
-                    
+                }
+                else {
+                    println(calList.last?.number.count)
+                    println(calList.last?.operate.count)
+                    println(calList.last?.num)
+                    calList.last?.remove()
                 }
             }
-            else {
-                if process.last=="+"||process.last=="-"||process.last=="*"||process.last=="/" {
-                    process.removeLast()
-                    operate.removeLast()
-                    let temp=number.removeLast()
-                    num = process.removeLast()
-                    if temp<0 {
-                        neg=true
-                    }
-                    else {
-                        neg=false
-                    }
-                    if temp%1>0 {
-                        dot=true
-                    }
-                    else {
-                        dot=false
-                    }
+            else if numstr.count>operate.count&&numstr[numstr.count-1]=="" {
+                calList.last?.finish=false
+                include=true
+            }
+            else if numstr.count>operate.count {
+                let temp=number.removeLast()
+                var tempstr=numstr.removeLast()
+                if countElements(tempstr)==0 {
+                    return
+                }
+                num = tempstr
+                if temp<0 {
+                    neg=true
+                }
+                else {
+                    neg=false
+                }
+                if temp%1>0 {
+                    dot=true
+                }
+                else {
+                    dot=false
                 }
             }
-
+            else{
+                operate.removeLast()
+                let temp=number.removeLast()
+                var tempstr=numstr.removeLast()
+                num = tempstr
+                if temp<0 {
+                    neg=true
+                }
+                else {
+                    neg=false
+                }
+                if temp%1>0 {
+                    dot=true
+                }
+                else {
+                    dot=false
+                }
+            }
         }
     }
     
@@ -156,54 +182,29 @@ class Calculation: NSObject {
             }
         }
     }
-
-    func proc()->String{
-        var p:String=""
-        var pos=0
-        for (var i=0;i<countElements(process);i++){
-            if process[i]=="?" {
-                
-                p+="("+calList[pos].proc()
-                if calList[pos].finish {
-                    p+=")"
-                }
-                pos++
-            }
-            else {
-                p+=process[i]
-            }
-        }
-        if neg{
-            p+="(-"
-        }
-        if countElements(num)>0 {
-            p+=num
-        }
-        return p
-    }
     
     //only do append + _ * /
     //done
-    func addOperate(str:String)->Bool{
+    func addOperate(str:String){
         if include {
-            let val=calList.last?.addOperate(str)
-            return val!
+            calList.last?.addOperate(str)
+            return
         }
-        if countElements(num)>0 {
+        if countElements(num)==0&&(!(numstr.last=="")) {
+            return
+        }
+        else if countElements(num)>0 {
             var n=(num as NSString).floatValue
             if neg==false {
                 number.append(n)
-                process.append(num)
+                numstr.append(num)
             }
             else{
                 number.append(0-n)
-                process.append("-("+num+")")
+                numstr.append("-("+num+")")
             }
             neg=false
             num=""
-        }
-        if operate.count>=number.count{
-            return false
         }
         switch(str){
         case("+"):
@@ -219,64 +220,96 @@ class Calculation: NSObject {
         default:
             operate.append(-1)
         }
-        process.append(str)
-        return true
     }
     
+    func proc()->String{
+        var p:String=""
+        var pos=0
+        var calpos=0
+        for (pos=0;pos<numstr.count;pos++){
+            if numstr[pos]=="" {
+                p+="("+calList[calpos].proc()
+                if calList[calpos].finish {
+                    p+=")"
+                }
+                calpos++
+            }
+            else {
+                p+=numstr[pos]
+            }
+            if(operate.count<=pos) {
+                continue
+            }
+            if(operate[pos]==0){
+                p+="+"
+            }
+            if(operate[pos]==1){
+                p+="-"
+            }
+            if(operate[pos]==2){
+                p+="*"
+            }
+            if(operate[pos]==3){
+                p+="/"
+            }
+        }
+        if neg {
+            p+="(-"
+        }
+        if countElements(num)>0{
+            p+=num
+        }
+        return p
+    }
+   
     //do calculation O(N)
     //done
     func getresult(){
-        while(operate.count>0&&number.count>1){
-            var a=getValue()
-            var b=getOperator()
-            var c=getValue()
-            if(b==0){
-                while (operate.count>0)&&(operate.last>1){
-                    let secOp=getOperator()
-                    let secNum=getValue()
-                    if secOp==3 {
-                        c/=secNum
+        if number.count==0 {
+            return
+        }
+        var numCounter=0
+        var opCounter=0
+        result=getNumber(numCounter)
+        numCounter++
+        while(operate.count>opCounter&&number.count>numCounter){
+            var c=getNumber(numCounter)
+            if getOperate(opCounter)==0{
+                while operate.count>(numCounter+1)&&operate[opCounter+1]>1{
+                    numCounter++
+                    opCounter++
+                    if operate[opCounter]==3 {
+                        c/=getNumber(numCounter)
                     }
                     else {
-                        c*=secNum
+                        c*=getNumber(numCounter)
                     }
                 }
-                number.append(a+c)
-                
+                result+=c
             }
-            if(b==1){
-                var temp=false
-                while (operate.count>0)&&(operate.last>0){
-                    let secOp=getOperator()
-                    let secNum=getValue()
-                    if secOp==3 {
-                        c/=secNum
-                        break
-                        
+            else if getOperate(opCounter)==1{
+                while operate.count>(numCounter+1)&&operate[opCounter+1]>1{
+                    numCounter++
+                    opCounter++
+                    if operate[opCounter]==3 {
+                        c/=getNumber(numCounter)
                     }
-                    else if secOp==2{
-                        c*=secNum
-                        break
-                    }
-                    else{
-                        number.append(secNum)
-                        operate.append(secOp)
-                        number.append(c+a)
-                        temp=true
-                        break
+                    else {
+                        c*=getNumber(numCounter)
                     }
                 }
-                if !temp{
-                    number.append(c-a)
-                }
+                result-=c
             }
-            if(b==2){
-                number.append(c*a)
+            else if getOperate(opCounter)==2{
+                result*=c
             }
-            if(b==3){
-             number.append(c/a)
+            else if getOperate(opCounter)==3{
+             result/=c
             }
+            opCounter++
+            numCounter++
         }
+
     }
     
     //done
@@ -284,48 +317,48 @@ class Calculation: NSObject {
         operate = []
         number = []
         num=""
+        numstr=[]
         neg=false
         dot=false
-        process = []
         include=false
         finish=false
         calList=[]
         calSpot=[]
+        result=0
     }
     
     //output result
     //done
     func print()->String{
-        let s = NSString(format: "%f", number.first!)
+        let s = NSString(format: "%f", result)
         return s
         }
     
     //wrapper
     //done
-    func getValue() -> Float{
-        if(number.count>0){
-            
-            if calSpot.count==0||(calSpot.last != number.count-1){
-                return number.removeLast()
+    func getNumber(pos:Int)->Float{
+        if number.count>pos {
+            if numstr[pos]=="" {
+                return calList[calPos++].result
             }
             else {
-                number.removeLast()
-                return calList[calSpot.count-1].number[0];
+                return number[pos]
             }
         }
-        else{
-            return -1;
+        else {
+            return -1
         }
     }
     
     //wrapper
     //done
-    func getOperator() -> Int{
-        if(operate.count>0){
-            return operate.removeLast();
+    func getOperate(pos:Int)->Int{
+        if operate.count>pos {
+            return operate[pos]
         }
-        else{
-            return -1;
+        else {
+            return -1
         }
+        
     }
 }
