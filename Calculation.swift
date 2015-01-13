@@ -35,7 +35,11 @@ class Calculation: NSObject {
             }
             else{
                 number.append(0-n)
-                numstr.append("-("+num+")")
+                numstr.append("(-"+num+")")
+                neg=false
+                num=""
+                fill=true
+                return
             }
             neg=false
             num=""
@@ -76,70 +80,84 @@ class Calculation: NSObject {
     //relating to "X" button
     //done
     func remove(){
-        if countElements(num)>0 {
-            num=(num as NSString).substringToIndex(countElements(num)-1)
-        }
-        else if neg {
-            parentheses()
-            neg=false
-        }
-        else if number==[]&&operate==[] {
+        //empty, nothing to remove
+        if number==[]&&operate==[]&&num==""&&neg==false {
+            println("A")
             return
         }
+        //unfinished parentheses
+        else if include {
+            println("B")
+            if calList.last?.number.count==0&&calList.last?.operate.count==0&&calList.last?.num==""&&calList.last?.neg==false {
+                calList.removeLast()
+                number.removeLast()
+                numstr.removeLast()
+                calSpot.removeLast()
+                include=false
+            }
+            else {
+                calList.last?.remove()
+            }
+        }
+        //finished parentheses
+        else if numstr.count>operate.count&&numstr[numstr.count-1]=="" {
+            println("C")
+            calList.last?.finish=false
+            include=true
+        }
+        //unfinished number,digit>=1
+        else if countElements(num)>0 {
+            println("D")
+            num=(num as NSString).substringToIndex(countElements(num)-1)
+        }
+        //unfinished neg number to parentheses
+        else if countElements(num)==0&&neg {
+            println("E")
+            neg=false
+            dot=false
+            parentheses()
+        }
+        //finished number
+        else if countElements (num)==0&&operate.count<number.count {
+            println("F")
+            var tempstr=numstr.removeLast()
+            var tempnum=number.removeLast()
+            //only one digit positive
+            if countElements(tempstr)==1 {
+                return
+            }
+            //more than one digit positive
+            else if tempnum>0 {
+                num=(tempstr as NSString).substringToIndex(countElements(tempstr)-1)
+            }
+            //negative
+            num=(tempstr as NSString).substringFromIndex(2)
+            num=(num as NSString).substringToIndex(countElements(num)-1)
+            neg=true
+            if (num as NSString).containsString(".") {
+                dot=true
+            }
+            else {
+                dot=false
+            }
+            
+        }
+        //operator
         else{
-            if include {
-                if calList.last?.number.count==0&&calList.last?.operate.count==0&&calList.last?.num=="" {
-                    calList.removeLast()
-                    number.removeLast()
-                    numstr.removeLast()
-                    calSpot.removeLast()
-                    include=false
-                }
-                else {
-                    calList.last?.remove()
-                }
+            println("G")
+            operate.removeLast()
+            if number.last<0 {
+                return
             }
-            else if numstr.count>operate.count&&numstr[numstr.count-1]=="" {
-                calList.last?.finish=false
-                include=true
+            let temp=number.removeLast()
+            var tempstr=numstr.removeLast()
+            num = tempstr
+            neg=false
+            if temp%1>0 {
+                dot=true
             }
-            else if numstr.count>operate.count {
-                let temp=number.removeLast()
-                var tempstr=numstr.removeLast()
-                if countElements(tempstr)==0 {
-                    return
-                }
-                num = tempstr
-                if temp<0 {
-                    neg=true
-                }
-                else {
-                    neg=false
-                }
-                if temp%1>0 {
-                    dot=true
-                }
-                else {
-                    dot=false
-                }
-            }
-            else{
-                operate.removeLast()
-                let temp=number.removeLast()
-                var tempstr=numstr.removeLast()
-                num = tempstr
-                if temp<0 {
-                    neg=true
-                }
-                else {
-                    neg=false
-                }
-                if temp%1>0 {
-                    dot=true
-                }
-                else {
-                    dot=false
-                }
+            else {
+                dot=false
             }
         }
     }
@@ -190,7 +208,10 @@ class Calculation: NSObject {
             calList.last?.addOperate(str)
             return
         }
-        if countElements(num)==0&&(!(numstr.last=="")) {
+        if countElements(num)==0&&operate.count==number.count {
+            if operate.count==0 {
+                return
+            }
             operate.removeLast()
         }
         else if countElements(num)>0 {
@@ -223,9 +244,15 @@ class Calculation: NSObject {
     }
     
     func proc()->String{
+        println("===")
+        println(numstr)
+        println(number)
+        println(operate)
+        println(num)
         var p:String=""
         var pos=0
         calPos=0
+        println(p)
         for (pos=0;pos<numstr.count;pos++){
             if numstr[pos]=="" {
                 p+="("+calList[calPos].proc()
@@ -233,26 +260,32 @@ class Calculation: NSObject {
                     p+=")"
                 }
                 calPos++
+                println("1")
             }
             else {
                 p+=numstr[pos]
+                println("2")
             }
             if(operate.count<=pos) {
+                println("3")
                 continue
             }
             if(operate[pos]==0){
+                println("4")
                 p+="+"
             }
             if(operate[pos]==1){
+                println("5")
                 p+="-"
             }
             if(operate[pos]==2){
+                println("6")
                 p+="*"
             }
             if(operate[pos]==3){
+                println("7")
                 p+="/"
             }
-            println(p)
         }
         if neg {
             p+="(-"
@@ -260,6 +293,8 @@ class Calculation: NSObject {
         if countElements(num)>0{
             p+=num
         }
+        println(p)
+        println("===")
         return p
     }
    
@@ -356,7 +391,6 @@ class Calculation: NSObject {
                 }
                 s+=String(num)+","
             }
-            println(s)
         }
         let num=Int(result)%1000
         if(num<10){

@@ -45,11 +45,11 @@ class ViewController: UIViewController {
         calculation.addOperate(sender.currentTitle!)
         if button=="=" {
             Result.text=calculation.print()
-            Formula.text=calculation.proc()
             calculation.clear()
         }
-        
+        else {
             Formula.text=calculation.proc()
+        }
     }
     
     //done
