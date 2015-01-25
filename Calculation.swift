@@ -24,11 +24,13 @@ class Calculation: NSObject {
     
     var result:Float=0
     
-    //add a new parentheses
-    func parentheses(){
-        var fill=false
+    func clearNum()->Bool{
         if countElements(num)>0 {
             var n=(num as NSString).floatValue
+            
+            if (num as NSString).substringFromIndex(countElements(num)-1)=="." {
+                num=(num as NSString).substringToIndex(countElements(num)-1)
+            }
             if neg==false {
                 number.append(n)
                 numstr.append(num)
@@ -38,14 +40,18 @@ class Calculation: NSObject {
                 numstr.append("(-"+num+")")
                 neg=false
                 num=""
-                fill=true
-                return
+                return true
             }
             neg=false
             num=""
-            fill=true
+            return true
         }
-        
+        return false
+    }
+    
+    //add a new parentheses
+    func parentheses(){
+        var fill=clearNum()
         if !include {
             if base{//base: create new () calculation
                 if operate.count<number.count {
@@ -82,12 +88,10 @@ class Calculation: NSObject {
     func remove(){
         //empty, nothing to remove
         if number==[]&&operate==[]&&num==""&&neg==false {
-            println("A")
             return
         }
         //unfinished parentheses
         else if include {
-            println("B")
             if calList.last?.number.count==0&&calList.last?.operate.count==0&&calList.last?.num==""&&calList.last?.neg==false {
                 calList.removeLast()
                 number.removeLast()
@@ -101,25 +105,21 @@ class Calculation: NSObject {
         }
         //finished parentheses
         else if numstr.count>operate.count&&numstr[numstr.count-1]=="" {
-            println("C")
             calList.last?.finish=false
             include=true
         }
         //unfinished number,digit>=1
         else if countElements(num)>0 {
-            println("D")
             num=(num as NSString).substringToIndex(countElements(num)-1)
         }
         //unfinished neg number to parentheses
         else if countElements(num)==0&&neg {
-            println("E")
             neg=false
             dot=false
             parentheses()
         }
         //finished number
         else if countElements (num)==0&&operate.count<number.count {
-            println("F")
             var tempstr=numstr.removeLast()
             var tempnum=number.removeLast()
             //only one digit positive
@@ -144,7 +144,6 @@ class Calculation: NSObject {
         }
         //operator
         else{
-            println("G")
             operate.removeLast()
             if number.last<0 {
                 return
@@ -214,19 +213,7 @@ class Calculation: NSObject {
             }
             operate.removeLast()
         }
-        else if countElements(num)>0 {
-            var n=(num as NSString).floatValue
-            if neg==false {
-                number.append(n)
-                numstr.append(num)
-            }
-            else{
-                number.append(0-n)
-                numstr.append("(-"+num+")")
-            }
-            neg=false
-            num=""
-        }
+        clearNum()
         switch(str){
         case("+"):
             operate.append(0)
@@ -236,23 +223,15 @@ class Calculation: NSObject {
             operate.append(2)
         case("/"):
             operate.append(3)
-        case("="):
-            getresult()
         default:
             operate.append(-1)
         }
     }
     
     func proc()->String{
-        println("===")
-        println(numstr)
-        println(number)
-        println(operate)
-        println(num)
         var p:String=""
         var pos=0
         calPos=0
-        println(p)
         for (pos=0;pos<numstr.count;pos++){
             if numstr[pos]=="" {
                 p+="("+calList[calPos].proc()
@@ -260,30 +239,23 @@ class Calculation: NSObject {
                     p+=")"
                 }
                 calPos++
-                println("1")
             }
             else {
                 p+=numstr[pos]
-                println("2")
             }
             if(operate.count<=pos) {
-                println("3")
                 continue
             }
             if(operate[pos]==0){
-                println("4")
                 p+="+"
             }
             if(operate[pos]==1){
-                println("5")
                 p+="-"
             }
             if(operate[pos]==2){
-                println("6")
                 p+="*"
             }
             if(operate[pos]==3){
-                println("7")
                 p+="/"
             }
         }
@@ -293,15 +265,36 @@ class Calculation: NSObject {
         if countElements(num)>0{
             p+=num
         }
-        println(p)
-        println("===")
         return p
     }
    
     //do calculation O(N)
     //done
-    func getresult(){
+    func complete()->Bool{
         if number.count==0 {
+            return true
+        }
+        if number.count <= operate.count {
+            return false
+        }
+        if calSpot.last==number.count-1 {
+            if calList.last?.finish==false {
+                return false
+            }
+        }
+        return true
+    }
+
+    func getresult(){
+        if include {
+            calList.last?.getresult()
+            if calList.last?.finish==false {
+                return
+            }
+        }
+        clearNum()
+        finish=complete()
+        if !finish {
             return
         }
         var numCounter=0
@@ -368,6 +361,9 @@ class Calculation: NSObject {
     //output result
     //done
     func print()->String{
+        if !finish {
+            return "Error: uncomplete equation"
+        }
         if result<1000&&result>(-1000) {
             return NSString(format: "%f", result)
         }

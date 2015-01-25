@@ -33,28 +33,33 @@ class ViewController: UIViewController {
     
     //done
     @IBAction func number(sender: UIButton) {
-        println(sender.currentTitle!)
+        if calculation.finish {
+            calculation.clear()
+        }
         calculation.addNumber(sender.currentTitle!)
         Formula.text=calculation.proc()
     }
     
     //done
     @IBAction func operate(sender: UIButton) {
-        var button=sender.currentTitle!
-        println(button)
-        calculation.addOperate(sender.currentTitle!)
-        if button=="=" {
-            Result.text=calculation.print()
+        if calculation.finish {
             calculation.clear()
         }
-        else {
-            Formula.text=calculation.proc()
-        }
+        var button=sender.currentTitle!
+        calculation.addOperate(sender.currentTitle!)
+        Formula.text=calculation.proc()
     }
     
+    @IBAction func equal(sender: UIButton) {
+        
+        calculation.getresult()
+        Result.text=calculation.print()
+        Formula.text=calculation.proc()
+        
+        println(Formula.text)
+    }
     //done
     @IBAction func clear(sender: UIButton) {
-        println("clear")
         calculation.clear()
         Formula.text=""
         Result.text=""
